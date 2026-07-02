@@ -2,18 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   createCustomerFromForm,
   loadCustomers,
+  markCustomerDeleted,
   saveCustomers,
   updateCustomerFromForm,
 } from '../services/customerService'
 import { addNotification } from '../services/notificationService'
 import { addActivityLogEntry } from '../services/activityService'
+import { DATA_CHANGED_EVENT } from '../services/dataEvents'
 import type { Customer, CustomerFormValues } from '../types/customer'
 
 export type CustomerSortKey = 'fullName' | 'city' | 'createdAt' | 'updatedAt'
 
 export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>(() => loadCustomers())
-  const [hasLoaded, setHasLoaded] = useState(false)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<CustomerSortKey>('updatedAt')
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
@@ -21,15 +22,15 @@ export function useCustomers() {
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
 
   useEffect(() => {
-    const loaded = loadCustomers()
-    setCustomers(loaded)
-    setHasLoaded(true)
-  }, [])
+    const load = () => {
+      setCustomers(loadCustomers())
+    }
 
-  useEffect(() => {
-    if (!hasLoaded) return
-    saveCustomers(customers)
-  }, [customers, hasLoaded])
+    load()
+    window.addEventListener(DATA_CHANGED_EVENT, load)
+
+    return () => window.removeEventListener(DATA_CHANGED_EVENT, load)
+  }, [])
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -73,28 +74,40 @@ export function useCustomers() {
 
   const saveCustomer = (values: CustomerFormValues) => {
     if (selectedCustomer) {
-      setCustomers((current) => {
-        const updated = current.map((customer) =>
-          customer.id === selectedCustomer.id
-            ? updateCustomerFromForm(customer, values)
-            : customer,
-        )
+      const updatedCustomers = customers.map((customer) =>
+        customer.id === selectedCustomer.id
+          ? updateCustomerFromForm(customer, values)
+          : customer,
+      )
+
+      try {
+        saveCustomers(updatedCustomers)
+        setCustomers(updatedCustomers)
         addNotification(`Customer updated: ${values.fullName}`, 'success')
         addActivityLogEntry('Customer edited', `Updated ${values.fullName}`, values.fullName)
-        return updated
-      })
+      } catch (error) {
+        addNotification('Unable to update customer. Please try again.', 'warning')
+        return
+      }
     } else {
       const duplicate = customers.some((customer) => customer.fullName.toLowerCase() === values.fullName.toLowerCase())
       if (duplicate) {
         addNotification('Customer already exists', 'warning')
         return
       }
-      setCustomers((current) => {
-        const created = createCustomerFromForm(values)
+
+      const created = createCustomerFromForm(values)
+      const updatedCustomers = [created, ...customers]
+
+      try {
+        saveCustomers(updatedCustomers)
+        setCustomers(updatedCustomers)
         addNotification(`Customer added: ${created.fullName}`, 'success')
         addActivityLogEntry('Customer added', `Added ${created.fullName}`, created.fullName)
-        return [created, ...current]
-      })
+      } catch (error) {
+        addNotification('Unable to save customer. Please try again.', 'warning')
+        return
+      }
     }
 
     closeModal()
@@ -110,12 +123,17 @@ export function useCustomers() {
 
   const confirmDeleteCustomer = () => {
     if (!deleteTarget) return
-    setCustomers((current) => {
-      const remaining = current.filter((customer) => customer.id !== deleteTarget.id)
+
+    try {
+      markCustomerDeleted(deleteTarget.id)
+      setCustomers((current) => current.filter((customer) => customer.id !== deleteTarget.id))
       addNotification(`Customer deleted: ${deleteTarget.fullName}`, 'warning')
       addActivityLogEntry('Customer deleted', `Deleted ${deleteTarget.fullName}`, deleteTarget.fullName)
-      return remaining
-    })
+    } catch (error) {
+      addNotification('Unable to delete customer. Please try again.', 'warning')
+      return
+    }
+
     setDeleteTarget(null)
   }
 

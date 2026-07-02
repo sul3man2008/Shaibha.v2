@@ -4,13 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { ACTIVITY_LOG_CHANGED_EVENT, clearActivityLog, loadActivityLog, type ActivityLogEntry } from '../services/activityService'
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
-}
+import { formatDisplayDateTime } from '../utils/date'
 
 export default function ActivityLog() {
   const [entries, setEntries] = useState<ActivityLogEntry[]>([])
@@ -52,7 +46,7 @@ export default function ActivityLog() {
   }
 
   const handleExportCsv = () => {
-    const rows = filteredEntries.map((entry) => [entry.action, entry.details, formatDate(entry.createdAt), entry.createdBy ?? 'System'].join(','))
+    const rows = filteredEntries.map((entry) => [entry.action, entry.details, formatDisplayDateTime(entry.createdAt), entry.createdBy ?? 'System'].join(','))
     const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -147,8 +141,7 @@ export default function ActivityLog() {
                 </div>
               </div>
               <div className="text-sm text-slate-600">
-                <p>{formatDate(entry.createdAt)}</p>
-                <p className="mt-1 text-xs text-slate-500">{new Date(entry.createdAt).toLocaleTimeString()}</p>
+                <p>{formatDisplayDateTime(entry.createdAt)}</p>
               </div>
             </Card>
           ))}

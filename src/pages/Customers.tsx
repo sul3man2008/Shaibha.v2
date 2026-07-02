@@ -13,6 +13,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { calculateCustomerLedgerSummary, getCustomerLedger, LEDGER_CHANGED_EVENT } from '../services/ledgerService'
 import type { CustomerWithLedger } from '../types/customer'
 import type { LedgerEntry } from '../types/ledger'
+import { formatDisplayDate } from '../utils/date'
 
 export default function Customers() {
   const {
@@ -226,7 +227,7 @@ export default function Customers() {
               <div className="rounded-3xl bg-slate-50 p-5">
                 <p className="text-sm text-slate-500">Last action</p>
                 <p className="mt-2 text-3xl font-semibold text-slate-950">
-                  {filteredCustomers[0] ? new Date(filteredCustomers[0].updatedAt).toLocaleDateString() : '—'}
+                  {filteredCustomers[0] ? formatDisplayDate(filteredCustomers[0].updatedAt) : '—'}
                 </p>
               </div>
             </div>
@@ -296,7 +297,7 @@ export default function Customers() {
                   </div>
                   <div className="text-sm text-slate-600">
                     <p className="font-medium text-slate-900">Entry count: {selectedCustomerTotals.entryCount}</p>
-                    <p>Last transaction: {selectedCustomerTotals.lastTransactionDate ? new Date(selectedCustomerTotals.lastTransactionDate).toLocaleDateString() : '—'}</p>
+                    <p>Last transaction: {selectedCustomerTotals.lastTransactionDate ? formatDisplayDate(selectedCustomerTotals.lastTransactionDate) : '—'}</p>
                   </div>
                 </div>
 
@@ -348,7 +349,7 @@ export default function Customers() {
                     <Table headers={['Date', 'Direction', 'Mode', 'Formula', '24K', '21K', 'Labour', 'VAT', 'Total', 'Invoice', 'Notes']}>
                       {selectedCustomerLedger.map((entry) => (
                         <tr key={entry.id} className="border-b border-slate-200 last:border-b-0">
-                          <td className="px-4 py-4 text-sm text-slate-700">{new Date(entry.date).toLocaleDateString()}</td>
+                          <td className="px-4 py-4 text-sm font-medium text-slate-700">{formatDisplayDate(entry.date)}</td>
                           <td className="px-4 py-4 text-sm text-slate-700">{entry.direction === 'receive' ? 'Gold Received' : 'Gold Given'}</td>
                           <td className="px-4 py-4 text-sm text-slate-700">{entry.entryMode === 'gold' ? 'Gold Only' : entry.entryMode === 'labour' ? 'Labour Only' : 'Gold + Labour'}</td>
                           <td className="px-4 py-4 text-sm text-slate-700">{entry.formulaMethod === 'method1' ? '×1.14' : entry.formulaMethod === 'method2' ? '×1.142' : '×(24/21)'}</td>

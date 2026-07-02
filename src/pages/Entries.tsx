@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Plus, Search, SlidersHorizontal, Trash2, Copy, Upload } from 'lucide-react'
+import { formatDisplayDate } from '../utils/date'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -8,14 +9,6 @@ import { Modal } from '../components/ui/Modal'
 import { Table } from '../components/ui/Table'
 import { EntryForm } from '../components/EntryForm'
 import { useEntries } from '../hooks/useEntries'
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
 
 function formatDisplayValue(value: number | string | null | undefined) {
   const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? '0'))
@@ -151,7 +144,7 @@ export default function EntriesPage() {
                 const customer = customers.find((item) => item.id === entry.customerId)
                 return (
                   <tr key={entry.id} className="border-b border-slate-200 last:border-b-0">
-                    <td className="px-4 py-4 text-sm text-slate-900">{formatDate(entry.date)}</td>
+                    <td className="px-4 py-4 text-sm font-medium text-slate-900">{formatDisplayDate(entry.date)}</td>
                     <td className="px-4 py-4 text-sm text-slate-700">{customer?.fullName ?? 'Unknown'}</td>
                     <td className="px-4 py-4 text-sm text-slate-700">{entry.direction === 'receive' ? 'Gold Received' : 'Gold Given'}</td>
                     <td className="px-4 py-4 text-sm text-slate-700">{entry.entryMode === 'gold' ? 'Gold Only' : entry.entryMode === 'labour' ? 'Labour Only' : 'Gold + Labour'}</td>
@@ -191,7 +184,7 @@ export default function EntriesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-950">{customer?.fullName ?? 'Unknown'}</p>
-                      <p className="mt-1 text-sm text-slate-500">{formatDate(entry.date)}</p>
+                      <p className="mt-1 text-sm text-slate-500">{formatDisplayDate(entry.date)}</p>
                     </div>
                     <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">{entry.direction === 'receive' ? 'Gold Received' : 'Gold Given'}</span>
                   </div>

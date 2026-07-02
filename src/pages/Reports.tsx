@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Printer, Download, Filter } from 'lucide-react'
+import { formatDisplayDate } from '../utils/date'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { loadCustomers } from '../services/customerService'
 import { loadEntries } from '../services/entryService'
+import { loadUsers } from '../services/authService'
+import { DATA_CHANGED_EVENT } from '../services/dataEvents'
 import type { Customer } from '../types/customer'
 import type { Entry } from '../types/entry'
+import type { AuthUser } from '../types/auth'
 import {
   buildReportPayload,
   exportReportToCsv,
@@ -29,25 +33,24 @@ const reportTypeOptions: Array<{ value: ReportType; label: string }> = [
   { value: 'invoice', label: 'Invoice report' },
 ]
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
 export default function Reports() {
   const { t, isUrdu } = useLanguage()
   const [entries, setEntries] = useState<Entry[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [users, setUsers] = useState<AuthUser[]>([])
   const [reportType, setReportType] = useState<ReportType>('daily')
   const [filters, setFilters] = useState<ReportFilters>(getDefaultReportFilters())
   const [showPrintView, setShowPrintView] = useState(false)
 
   useEffect(() => {
-    setEntries(loadEntries())
-    setCustomers(loadCustomers())
+    const syncData = () => {
+      setEntries(loadEntries())
+      setCustomers(loadCustomers())
+      setUsers(loadUsers())
+    }
+    syncData()
+    window.addEventListener(DATA_CHANGED_EVENT, syncData)
+    return () => window.removeEventListener(DATA_CHANGED_EVENT, syncData)
   }, [])
 
   const reportPayload = useMemo(() => buildReportPayload(reportType, filters, entries, customers), [customers, entries, filters, reportType])
@@ -178,6 +181,33 @@ export default function Reports() {
               <option value="off">{isUrdu ? 'انوائس غیر فعال' : 'Invoice OFF'}</option>
             </select>
           </label>
+          <label className="space-y-2 text-sm text-slate-700">
+            <span className="block font-medium">{t('reports.vat')}</span>
+            <select
+              className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 outline-none"
+              value={filters.vatFilter}
+              onChange={(event) => handleFilterChange('vatFilter', event.target.value)}
+            >
+              <option value="all">{isUrdu ? 'تمام وی اے ٹی' : 'All VAT'}</option>
+              <option value="on">{isUrdu ? 'وی اے ٹی فعال' : 'VAT On'}</option>
+              <option value="off">{isUrdu ? 'وی اے ٹی غیر فعال' : 'VAT Off'}</option>
+            </select>
+          </label>
+          <label className="space-y-2 text-sm text-slate-700">
+            <span className="block font-medium">{t('reports.enteredBy')}</span>
+            <select
+              className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 outline-none"
+              value={filters.enteredBy}
+              onChange={(event) => handleFilterChange('enteredBy', event.target.value)}
+            >
+              <option value="">{isUrdu ? 'تمام صارفین' : 'All Users'}</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.fullName}>
+                  {user.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="flex items-end">
             <Button
               variant="outline"
@@ -266,7 +296,7 @@ export default function Reports() {
               <tbody>
                 {reportPayload.entries.map((item) => (
                   <tr key={item.id} className="border-b border-slate-100 last:border-b-0">
-                    <td className="px-3 py-3 text-slate-900">{formatDate(item.date)}</td>
+                    <td className="px-3 py-3 font-medium text-slate-900">{formatDisplayDate(item.date)}</td>
                     <td className="px-3 py-3 text-slate-600">{item.customerName}</td>
                     <td className="px-3 py-3 text-slate-600">{item.direction}</td>
                     <td className="px-3 py-3 text-slate-600">{item.entryMode}</td>
@@ -288,8 +318,8 @@ export default function Reports() {
 
       {showPrintView ? (
         <div className="hidden print:block">
-          <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 text-slate-900">
-            <div className="flex items-start justify-between">
+          <div className="report-print-sheet space-y-6 rounded-2xl border border-slate-200 bg-white p-8 text-slate-900">
+            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-slate-500">{reportPayload.businessName}</p>
                 <h2 className="mt-2 text-2xl font-semibold">{reportPayload.title}</h2>
@@ -298,7 +328,7 @@ export default function Reports() {
                 </p>
               </div>
               <div className="text-right text-sm text-slate-600">
-                <p>Generated {formatDate(reportPayload.generatedAt)}</p>
+                <p>Generated {formatDisplayDate(reportPayload.generatedAt)}</p>
                 {reportPayload.filters.customerId ? <p>{customers.find((customer) => customer.id === reportPayload.filters.customerId)?.fullName ?? 'Selected customer'}</p> : null}
               </div>
             </div>
@@ -332,7 +362,7 @@ export default function Reports() {
                 <tbody>
                   {reportPayload.entries.map((item) => (
                     <tr key={item.id} className="border-b border-slate-100 last:border-b-0">
-                      <td className="px-3 py-3">{formatDate(item.date)}</td>
+                      <td className="px-3 py-3">{formatDisplayDate(item.date)}</td>
                       <td className="px-3 py-3">{item.customerName}</td>
                       <td className="px-3 py-3">{item.direction}</td>
                       <td className="px-3 py-3">{item.entryMode}</td>

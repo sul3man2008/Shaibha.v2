@@ -15,6 +15,7 @@ import { useEntryForm } from '../hooks/useEntryForm'
 import { useLanguage } from '../context/LanguageContext'
 import { Modal } from './ui/Modal'
 import { compressImageFile, formatBytes } from '../utils/imageCompression'
+import { getDateInputValue } from '../utils/date'
 import { ZoomableImage } from './ui/ZoomableImage'
 
 interface EntryFormProps {
@@ -37,7 +38,7 @@ export function EntryForm({ entry, customers, settings, onSave, onCancel }: Entr
     resolver: zodResolver(entrySchema) as Resolver<EntryFormValues>,
     defaultValues: {
       customerId: '',
-      date: new Date().toISOString().slice(0, 10),
+      date: getDateInputValue(),
       direction: 'receive',
       entryMode: 'gold',
       formulaMethod: 'method1',
@@ -59,6 +60,7 @@ export function EntryForm({ entry, customers, settings, onSave, onCancel }: Entr
   const navigate = useNavigate()
   const [customerQuery, setCustomerQuery] = useState('')
   const [viewerOpen, setViewerOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
   const [photoMeta, setPhotoMeta] = useState<Record<number, { originalSizeBytes: number; compressedSizeBytes: number }>>({})
   const customerOptions = useMemo(() => {
@@ -80,7 +82,7 @@ export function EntryForm({ entry, customers, settings, onSave, onCancel }: Entr
   useEffect(() => {
     reset({
       customerId: entry?.customerId ?? '',
-      date: entry?.date ?? new Date().toISOString().slice(0, 10),
+      date: entry?.date ?? getDateInputValue(),
       direction: entry?.direction ?? 'receive',
       entryMode: entry?.entryMode ?? 'gold',
       formulaMethod: entry?.formulaMethod ?? settings?.defaultFormula ?? 'method1',
@@ -200,8 +202,15 @@ export function EntryForm({ entry, customers, settings, onSave, onCancel }: Entr
     }
   }, [formData.invoiceEnabled, formData.invoiceNumber])
 
+  const handleFormSubmit = (values: EntryFormValues) => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    onSave(values)
+    window.setTimeout(() => setIsSubmitting(false), 0)
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSave)} className="space-y-3">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-3" aria-busy={isSubmitting}>
       <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
         <div className="grid gap-3 md:grid-cols-2">
           <label className="grid gap-2 text-sm text-slate-700">
@@ -430,7 +439,7 @@ export function EntryForm({ entry, customers, settings, onSave, onCancel }: Entr
         <Button variant="ghost" type="button" onClick={onCancel}>
           {t('entryForm.cancel')}
         </Button>
-        <Button type="submit">{entry ? t('entryForm.updateEntry') : t('entryForm.addEntry')}</Button>
+        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving…' : entry ? t('entryForm.updateEntry') : t('entryForm.addEntry')}</Button>
       </div>
     </form>
   )

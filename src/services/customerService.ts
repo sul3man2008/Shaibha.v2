@@ -1,9 +1,10 @@
 import type { Customer, CustomerFormValues } from '../types/customer'
 import { getCurrentSessionUser } from './authService'
+import { emitDataChanged } from './dataEvents'
 
 export const STORAGE_KEY = 'shaibah_customers'
 
-export function loadCustomers(): Customer[] {
+export function loadAllCustomers(): Customer[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
@@ -13,9 +14,31 @@ export function loadCustomers(): Customer[] {
   }
 }
 
+export function loadCustomers(): Customer[] {
+  return loadAllCustomers().filter((customer) => !customer.isDeleted)
+}
+
 export function saveCustomers(customers: Customer[]) {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(customers))
+  emitDataChanged()
+}
+
+export function markCustomerDeleted(customerId: string) {
+  const customers = loadAllCustomers()
+  const updated = customers.map((customer) =>
+    customer.id === customerId
+      ? {
+          ...customer,
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+          deletedByName: getCurrentSessionUser()?.fullName,
+          deletedByUsername: getCurrentSessionUser()?.username,
+          deletedByRole: getCurrentSessionUser()?.role,
+        }
+      : customer,
+  )
+  saveCustomers(updated)
 }
 
 export function createCustomerFromForm(data: CustomerFormValues): Customer {

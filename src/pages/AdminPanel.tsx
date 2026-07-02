@@ -8,6 +8,8 @@ import { loadEntries } from '../services/entryService'
 import { buildBackupPayload, exportBackupJson, importBackupPayload, validateBackupPayload, clearAllWorkspaceData, getLastBackupDate, addActivityLogEntry } from '../services/activityService'
 import { loadLedger } from '../services/ledgerService'
 import { loadNotifications } from '../services/notificationService'
+import { DATA_CHANGED_EVENT } from '../services/dataEvents'
+import { formatDisplayDate } from '../utils/date'
 
 function formatBytes(size: number) {
   if (size < 1024) return `${size} B`
@@ -38,8 +40,12 @@ export default function AdminPanel() {
     }
 
     refresh()
+    window.addEventListener(DATA_CHANGED_EVENT, refresh)
     window.addEventListener('storage', refresh)
-    return () => window.removeEventListener('storage', refresh)
+    return () => {
+      window.removeEventListener(DATA_CHANGED_EVENT, refresh)
+      window.removeEventListener('storage', refresh)
+    }
   }, [])
 
   const storageSize = useMemo(() => {
@@ -107,7 +113,7 @@ export default function AdminPanel() {
           { label: 'Total customers', value: customers.length.toString() },
           { label: 'Total entries', value: entries.length.toString() },
           { label: 'Storage used', value: storageSize },
-          { label: 'Last backup/export', value: lastBackupDate ? new Date(lastBackupDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not yet' },
+          { label: 'Last backup/export', value: lastBackupDate ? formatDisplayDate(lastBackupDate) : 'Not yet' },
         ].map((item) => (
           <Card key={item.label} className="space-y-2">
             <p className="text-sm font-medium text-slate-500">{item.label}</p>

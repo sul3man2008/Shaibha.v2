@@ -4,9 +4,15 @@
   color-scheme: light;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-feature-settings: 'cv11', 'ss01';
-  background: #faf8f5;
-  color: #0f172a;
+  background: #f8fafc;
+  color: #111827;
   text-rendering: optimizeLegibility;
+}
+
+html.dark {
+  color-scheme: dark;
+  background: #0f172a;
+  color: #f9fafb;
 }
 
 * {
@@ -20,8 +26,14 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #f8f4ef 100%);
-  color: #0f172a;
+  background: linear-gradient(135deg, #f8fafc 0%, #f5fbf7 45%, #eefbf2 100%);
+  color: #111827;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%);
+  color: #f9fafb;
 }
 
 #root {
@@ -39,8 +51,8 @@ img {
 }
 
 ::selection {
-  background: rgba(212, 175, 55, 0.2);
-  color: #0f172a;
+  background: rgba(22, 163, 74, 0.2);
+  color: #111827;
 }
 
 h1,
@@ -49,7 +61,7 @@ h3,
 h4,
 h5,
 h6 {
-  color: #0f172a;
+  color: inherit;
 }
 
 button,
@@ -57,4 +69,74 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+html.app-large-text {
+  font-size: 17px;
+}
+
+html.app-large-text body {
+  font-size: 1rem;
+}
+
+html.app-large-text .text-sm {
+  font-size: 0.95rem !important;
+}
+
+html.app-large-text .text-xs {
+  font-size: 0.82rem !important;
+}
+
+html.app-large-text button,
+html.app-large-text input,
+html.app-large-text textarea,
+html.app-large-text select {
+  font-size: 0.95rem;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  body {
+    background: white !important;
+    color: #111827 !important;
+  }
+
+  .report-print-sheet {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+
+  .report-print-sheet table {
+    font-size: 11px;
+  }
+
+  .report-print-sheet th,
+  .report-print-sheet td {
+    padding: 6px 4px;
+  }
+}
+
+@layer base {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #e2e8f0;
+  }
+
+  html.dark ::-webkit-scrollbar-track {
+    background: #111827;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(22, 163, 74, 0.32);
+    border-radius: 999px;
+  }
 }

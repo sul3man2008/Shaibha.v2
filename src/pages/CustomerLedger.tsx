@@ -5,6 +5,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { BookOpen, ChevronRight } from 'lucide-react'
 import { loadCustomers } from '../services/customerService'
 import { calculateCustomerLedgerSummary, LEDGER_CHANGED_EVENT } from '../services/ledgerService'
+import { DATA_CHANGED_EVENT } from '../services/dataEvents'
 import type { Customer } from '../types/customer'
 
 export default function CustomerLedger() {
@@ -25,9 +26,11 @@ export default function CustomerLedger() {
 
     syncLedgerData()
     window.addEventListener(LEDGER_CHANGED_EVENT, syncLedgerData)
+    window.addEventListener(DATA_CHANGED_EVENT, syncLedgerData)
 
     return () => {
       window.removeEventListener(LEDGER_CHANGED_EVENT, syncLedgerData)
+      window.removeEventListener(DATA_CHANGED_EVENT, syncLedgerData)
     }
   }, [])
 

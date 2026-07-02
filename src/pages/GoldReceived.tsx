@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Plus, Search, SortAsc, SlidersHorizontal, Upload } from 'lucide-react'
+import { formatDisplayDate } from '../utils/date'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -8,14 +9,6 @@ import { Modal } from '../components/ui/Modal'
 import { Table } from '../components/ui/Table'
 import { GoldReceivedForm } from '../components/GoldReceivedForm'
 import { useGoldReceived } from '../hooks/useGoldReceived'
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
 
 export default function GoldReceived() {
   const {
@@ -119,7 +112,7 @@ export default function GoldReceived() {
                 const customer = customers.find((item) => item.id === entry.customerId)
                 return (
                   <tr key={entry.id} className="border-b border-slate-200 last:border-b-0">
-                    <td className="px-4 py-4 text-sm text-slate-900">{formatDate(entry.date)}</td>
+                    <td className="px-4 py-4 text-sm font-medium text-slate-900">{formatDisplayDate(entry.date)}</td>
                     <td className="px-4 py-4 text-sm text-slate-700">{customer?.fullName ?? 'Unknown'}</td>
                     <td className="px-4 py-4 text-sm text-slate-700">{entry.goldType}</td>
                     <td className="px-4 py-4 text-sm text-slate-700">{entry.weight.toFixed(2)} g</td>
@@ -147,7 +140,7 @@ export default function GoldReceived() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-950">{customer?.fullName ?? 'Unknown'}</p>
-                      <p className="mt-1 text-sm text-slate-500">{formatDate(entry.date)}</p>
+                      <p className="mt-1 text-sm text-slate-500">{formatDisplayDate(entry.date)}</p>
                     </div>
                     <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">{entry.goldType}</span>
                   </div>

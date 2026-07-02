@@ -29,6 +29,7 @@ export default function SettingsPage() {
     setTimeout(() => {
       saveSettings(localSettings)
       setSettings(localSettings)
+      document.documentElement.classList.toggle('app-large-text', localSettings.largeText)
       addActivityLogEntry('Settings changed', `Updated settings for ${localSettings.workshopName}`)
       setIsSaving(false)
     }, 300)
@@ -191,6 +192,15 @@ export default function SettingsPage() {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 md:col-span-2">
+            <input
+              type="checkbox"
+              checked={localSettings.largeText}
+              onChange={(event) => setLocalSettings({ ...localSettings, largeText: event.target.checked })}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            <span>Use larger, easier-to-read text throughout the app</span>
           </label>
         </div>
       </Card>

@@ -20,6 +20,8 @@ export interface ReportFilters {
   direction: 'all' | 'receive' | 'give'
   entryMode: 'all' | 'gold' | 'labour' | 'both'
   invoiceFilter: 'all' | 'on' | 'off'
+  vatFilter: 'all' | 'on' | 'off'
+  enteredBy: string
 }
 
 export interface ReportSummary {
@@ -62,14 +64,15 @@ export interface ReportPayload {
 }
 
 export function getDefaultReportFilters(): ReportFilters {
-  const today = new Date().toISOString().slice(0, 10)
   return {
     startDate: '',
-    endDate: today,
+    endDate: '',
     customerId: '',
     direction: 'all',
     entryMode: 'all',
     invoiceFilter: 'all',
+    vatFilter: 'all',
+    enteredBy: '',
   }
 }
 
@@ -113,6 +116,9 @@ export function getFilteredEntries(entries: Entry[], filters: ReportFilters) {
       if (filters.entryMode !== 'all' && entry.entryMode !== filters.entryMode) return false
       if (filters.invoiceFilter === 'on' && !entry.invoiceEnabled) return false
       if (filters.invoiceFilter === 'off' && entry.invoiceEnabled) return false
+      if (filters.vatFilter === 'on' && Number(entry.vatAmount ?? 0) <= 0) return false
+      if (filters.vatFilter === 'off' && Number(entry.vatAmount ?? 0) > 0) return false
+      if (filters.enteredBy && entry.enteredByName !== filters.enteredBy) return false
       return true
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -229,6 +235,8 @@ export function exportReportToCsv(payload: ReportPayload) {
   lines.push(['Generated At', new Date(payload.generatedAt).toLocaleString()])
   lines.push(['Date Range', payload.filters.startDate || 'All', payload.filters.endDate || 'All'])
   lines.push(['Customer', payload.filters.customerId ? 'Selected customer' : 'All'])
+  lines.push(['VAT', payload.filters.vatFilter === 'all' ? 'All' : payload.filters.vatFilter === 'on' ? 'On' : 'Off'])
+  lines.push(['Entered By', payload.filters.enteredBy || 'All Users'])
   lines.push([])
   lines.push(['Summary'])
   lines.push(['Total 24K Received', payload.summary.total24kReceived.toFixed(2)])

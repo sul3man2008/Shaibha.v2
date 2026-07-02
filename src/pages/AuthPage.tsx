@@ -111,22 +111,22 @@ export default function AuthPage() {
   if (!isReady) return null
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff6db,_#fff)] p-4 text-slate-900 md:p-8" dir={isUrdu ? 'rtl' : 'ltr'}>
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 rounded-[32px] border border-slate-200 bg-white/90 p-4 shadow-soft md:p-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(22,163,74,0.16),_transparent_36%),linear-gradient(135deg,_#f8fafc,_#f3fbf4)] p-4 text-slate-900 transition-colors duration-200 dark:bg-[radial-gradient(circle_at_top,_rgba(22,163,74,0.18),_transparent_36%),linear-gradient(135deg,_#020617,_#111827)] dark:text-slate-100 md:p-8" dir={isUrdu ? 'rtl' : 'ltr'}>
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 rounded-[32px] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/90 md:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm uppercase tracking-[0.4em] text-slate-500">Shaibah Warsha</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950">{title}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{isUrdu ? 'سیکیور لاگ ان اور صارف مینجمنٹ' : 'Secure access and user management for the workshop.'}</p>
+            <p className="text-sm uppercase tracking-[0.4em] text-emerald-700 dark:text-emerald-400">Shaibah Warsha</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">{title}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">{isUrdu ? 'سیکیور لاگ ان اور صارف مینجمنٹ' : 'Secure access and user management for the workshop.'}</p>
           </div>
-          <button type="button" onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900">
+          <button type="button" onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-emerald-200 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             {isUrdu ? 'English / اردو' : 'English / اردو'}
           </button>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <Card className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-950">{mode === 'login' ? (isUrdu ? 'لاگ ان' : 'Login') : (isUrdu ? 'نیا اکاؤنٹ' : 'Create Account')}</h2>
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-white">{mode === 'login' ? (isUrdu ? 'لاگ ان' : 'Login') : (isUrdu ? 'نیا اکاؤنٹ' : 'Create Account')}</h2>
             <form className="space-y-4" onSubmit={handleSubmit}>
               {mode === 'register' && (
                 <>

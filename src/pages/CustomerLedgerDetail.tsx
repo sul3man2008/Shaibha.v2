@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Search, BookOpen, BadgeCheck, FileText, Camera, Printer, Download } from 'lucide-react'
 import { Card } from '../components/ui/Card'
@@ -7,24 +7,18 @@ import { Table } from '../components/ui/Table'
 import { Button } from '../components/ui/Button'
 import { useLedger } from '../hooks/useLedger'
 import { calculateCustomerLedgerSummary } from '../services/ledgerService'
-import { loadCustomers } from '../services/customerService'
+import { loadAllCustomers } from '../services/customerService'
+import { DATA_CHANGED_EVENT } from '../services/dataEvents'
 import type { Customer } from '../types/customer'
 import { downloadTextFile } from '../utils/reports'
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+import { formatDisplayDate } from '../utils/date'
 
 export default function CustomerLedgerDetail() {
   const { customerId = '' } = useParams()
   const navigate = useNavigate()
   const { transactions } = useLedger(customerId)
   const [query, setQuery] = useState('')
-  const [customers] = useState<Customer[]>(() => loadCustomers())
+  const [customers, setCustomers] = useState<Customer[]>(() => loadAllCustomers())
   const [showPrintView, setShowPrintView] = useState(false)
 
   const customer = customers.find((c) => c.id === customerId)
@@ -34,10 +28,12 @@ export default function CustomerLedgerDetail() {
     const normalizedQuery = query.trim().toLowerCase()
     return transactions
       .filter((transaction) => {
+        const notes = transaction.notes ?? ''
+        const invoice = transaction.invoiceNumber ?? ''
         const matchesQuery =
           normalizedQuery.length === 0 ||
-          transaction.invoiceNumber?.toLowerCase().includes(normalizedQuery) ||
-          transaction.notes.toLowerCase().includes(normalizedQuery) ||
+          invoice.toLowerCase().includes(normalizedQuery) ||
+          notes.toLowerCase().includes(normalizedQuery) ||
           transaction.direction.toLowerCase().includes(normalizedQuery)
 
         return matchesQuery
@@ -88,6 +84,13 @@ export default function CustomerLedgerDetail() {
     }
     downloadTextFile(`${customer?.fullName ?? 'customer'}-ledger.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8')
   }
+
+  useEffect(() => {
+    const syncCustomers = () => setCustomers(loadAllCustomers())
+    syncCustomers()
+    window.addEventListener(DATA_CHANGED_EVENT, syncCustomers)
+    return () => window.removeEventListener(DATA_CHANGED_EVENT, syncCustomers)
+  }, [])
 
   if (!customerId || !customer) {
     return (
@@ -213,7 +216,7 @@ export default function CustomerLedgerDetail() {
             >
               {filteredTransactions.map((entry) => (
                 <tr key={entry.id} className="border-b border-slate-200 last:border-b-0">
-                  <td className="px-4 py-4 text-sm text-slate-900">{formatDate(entry.date)}</td>
+                  <td className="px-4 py-4 text-sm font-medium text-slate-900">{formatDisplayDate(entry.date)}</td>
                   <td className="px-4 py-4 text-sm text-slate-700">{entry.direction === 'receive' ? 'Gold Received' : 'Gold Given'}</td>
                   <td className="px-4 py-4 text-sm text-slate-700 capitalize">{entry.entryMode}</td>
                   <td className="px-4 py-4 text-sm text-slate-700">{entry.formulaMethod}</td>
@@ -239,7 +242,7 @@ export default function CustomerLedgerDetail() {
             {filteredTransactions.map((entry) => (
               <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="font-semibold text-slate-900">{formatDate(entry.date)}</span>
+                  <span className="font-semibold text-slate-900">{formatDisplayDate(entry.date)}</span>
                   <span className="rounded-full bg-gold/10 px-2 py-1 text-xs font-semibold text-gold">{entry.direction === 'receive' ? 'Gold Received' : 'Gold Given'}</span>
                 </div>
                 <div className="space-y-2 text-slate-700">
@@ -301,7 +304,7 @@ export default function CustomerLedgerDetail() {
                 <p className="mt-2 text-sm text-slate-600">{customer.fullName}</p>
               </div>
               <div className="text-right text-sm text-slate-600">
-                <p>Generated {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                <p>Generated {formatDisplayDate(new Date().toISOString())}</p>
                 <p>{summary.totalTransactions} transactions</p>
               </div>
             </div>
@@ -335,7 +338,7 @@ export default function CustomerLedgerDetail() {
                 <tbody>
                   {filteredTransactions.map((entry) => (
                     <tr key={entry.id} className="border-b border-slate-100 last:border-b-0">
-                      <td className="px-3 py-3">{formatDate(entry.date)}</td>
+                      <td className="px-3 py-3">{formatDisplayDate(entry.date)}</td>
                       <td className="px-3 py-3">{entry.direction === 'receive' ? 'Gold Received' : 'Gold Given'}</td>
                       <td className="px-3 py-3">{entry.entryMode}</td>
                       <td className="px-3 py-3">{entry.weight21k.toFixed(2)}g</td>

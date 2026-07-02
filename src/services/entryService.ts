@@ -1,14 +1,15 @@
 import type { Entry, EntryFormValues } from '../types/entry'
 import { formulaMethods } from '../types/entry'
 import type { WorkshopSettings } from '../types/settings'
-import { defaultSettings } from '../types/settings'
+import { defaultSettings, normalizeSettings } from '../types/settings'
 import { syncEntryToLedger, removeEntryFromLedger, clearLedger } from './ledgerService'
 import { getCurrentSessionUser } from './authService'
+import { emitDataChanged } from './dataEvents'
 
 export const ENTRIES_STORAGE_KEY = 'shaibah_entries'
 export const SETTINGS_STORAGE_KEY = 'shaibah_settings'
 
-export function loadEntries(): Entry[] {
+export function loadAllEntries(): Entry[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = window.localStorage.getItem(ENTRIES_STORAGE_KEY)
@@ -18,16 +19,21 @@ export function loadEntries(): Entry[] {
   }
 }
 
+export function loadEntries(): Entry[] {
+  return loadAllEntries().filter((entry) => !entry.isDeleted)
+}
+
 export function saveEntries(entries: Entry[]) {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries))
+  emitDataChanged()
 }
 
 export function loadSettings(): WorkshopSettings {
   if (typeof window === 'undefined') return defaultSettings
   try {
     const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as WorkshopSettings) : defaultSettings
+    return normalizeSettings(raw ? (JSON.parse(raw) as Partial<WorkshopSettings>) : null)
   } catch {
     return defaultSettings
   }
@@ -35,7 +41,8 @@ export function loadSettings(): WorkshopSettings {
 
 export function saveSettings(settings: WorkshopSettings) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+  const normalized = normalizeSettings(settings)
+  window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(normalized))
 }
 
 export function createEntry(values: EntryFormValues, settings: WorkshopSettings): Entry {

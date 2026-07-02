@@ -8,6 +8,7 @@ export interface WorkshopSettings {
   workshopName: string
   workshopAddress: string
   workshopPhone: string
+  largeText: boolean
 }
 
 export const defaultSettings: WorkshopSettings = {
@@ -18,4 +19,13 @@ export const defaultSettings: WorkshopSettings = {
   workshopName: 'Shaibah Warsha',
   workshopAddress: '',
   workshopPhone: '',
+  largeText: false,
+}
+
+export function normalizeSettings(settings?: Partial<WorkshopSettings> | null): WorkshopSettings {
+  return {
+    ...defaultSettings,
+    ...settings,
+    largeText: Boolean(settings?.largeText),
+  }
 }

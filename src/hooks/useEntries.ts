@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadCustomers } from '../services/customerService'
 import { loadEntries, loadSettings, addEntry, updateExistingEntry, deleteEntry, duplicateEntry } from '../services/entryService'
 import { LEDGER_CHANGED_EVENT } from '../services/ledgerService'
+import { DATA_CHANGED_EVENT } from '../services/dataEvents'
 import { addNotification } from '../services/notificationService'
 import { addActivityLogEntry } from '../services/activityService'
 import type { Customer } from '../types/customer'
@@ -19,6 +20,7 @@ export function useEntries() {
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null)
   const [isModalOpen, setModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Entry | null>(null)
+  const saveInFlightRef = useRef(false)
 
   useEffect(() => {
     const syncData = () => {
@@ -29,9 +31,11 @@ export function useEntries() {
 
     syncData()
     window.addEventListener(LEDGER_CHANGED_EVENT, syncData)
+    window.addEventListener(DATA_CHANGED_EVENT, syncData)
 
     return () => {
       window.removeEventListener(LEDGER_CHANGED_EVENT, syncData)
+      window.removeEventListener(DATA_CHANGED_EVENT, syncData)
     }
   }, [])
 
@@ -66,21 +70,31 @@ export function useEntries() {
   }
 
   const saveEntry = (values: EntryFormValues) => {
-    if (!settings) return
+    if (!settings || saveInFlightRef.current) return
 
-    if (selectedEntry) {
-      const updated = updateExistingEntry(selectedEntry, values, settings)
-      setEntries((current) => current.map((entry) => (entry.id === selectedEntry.id ? updated : entry)))
-      addNotification('Entry updated', 'success')
-      addActivityLogEntry('Entry edited', `Edited entry for ${selectedEntry.customerId}`, 'System')
-    } else {
-      const created = addEntry(values, settings)
-      setEntries((current) => [created, ...current])
-      addNotification('Entry added', 'success')
-      addActivityLogEntry('Entry added', `Added entry for ${values.customerId}`, 'System')
+    saveInFlightRef.current = true
+    try {
+      const customer = customers.find((item) => item.id === values.customerId)
+      const customerName = customer?.fullName ?? 'Unknown customer'
+
+      if (selectedEntry) {
+        const updated = updateExistingEntry(selectedEntry, values, settings)
+        setEntries((current) => current.map((entry) => (entry.id === selectedEntry.id ? updated : entry)))
+        addNotification(`Entry updated for ${customerName}`, 'success')
+        addActivityLogEntry('Entry edited', `Edited entry for ${customerName}`, customerName)
+      } else {
+        const created = addEntry(values, settings)
+        setEntries((current) => [created, ...current])
+        addNotification(`Entry added for ${customerName}`, 'success')
+        addActivityLogEntry('Entry added', `Added entry for ${customerName}`, customerName)
+      }
+
+      closeModal()
+    } finally {
+      window.setTimeout(() => {
+        saveInFlightRef.current = false
+      }, 0)
     }
-
-    closeModal()
   }
 
   const requestDeleteEntry = (entry: Entry) => {
@@ -93,10 +107,12 @@ export function useEntries() {
 
   const confirmDeleteEntry = () => {
     if (!deleteTarget) return
+    const customer = customers.find((item) => item.id === deleteTarget.customerId)
+    const customerName = customer?.fullName ?? 'Unknown customer'
     deleteEntry(deleteTarget.id)
     setEntries((current) => current.filter((entry) => entry.id !== deleteTarget.id))
-    addNotification('Entry deleted', 'warning')
-    addActivityLogEntry('Entry deleted', `Deleted entry ${deleteTarget.id}`, 'System')
+    addNotification(`Entry deleted for ${customerName}`, 'warning')
+    addActivityLogEntry('Entry deleted', `Deleted entry for ${customerName}`, customerName)
     setDeleteTarget(null)
   }
 
@@ -104,9 +120,11 @@ export function useEntries() {
     if (!settings) return
     const duplicated = duplicateEntry(entry.id, settings)
     if (duplicated) {
+      const customer = customers.find((item) => item.id === duplicated.customerId)
+      const customerName = customer?.fullName ?? 'Unknown customer'
       setEntries((current) => [duplicated, ...current])
       addNotification('Entry duplicated', 'info')
-      addActivityLogEntry('Entry duplicated', `Duplicated entry ${entry.id}`, 'System')
+      addActivityLogEntry('Entry duplicated', `Duplicated entry for ${customerName}`, customerName)
     }
   }
 
